@@ -1,6 +1,7 @@
 # Team-32
 
 # CrypDoc
+![alt text](sketch.png "CrypDoc Sketch")
 ## Inspiration
 Taking advantage of work distribution upon doctors. In a capital city the capacity of work might be overflow but on the country side at the same time it might me the other way around. We implemented a solution to decentralize work and share tasks cleverly.
 
