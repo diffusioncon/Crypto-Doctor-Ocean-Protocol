@@ -87,7 +87,8 @@ As DOCTOR, make your final decision at: http://localhost:8081/decision
 * love 💚
 * caffein ☕
 * python 🐍
-* pytorch 🔦
-* fetch.ai
+* pytorch 🔥
+* crypten 🔒
 * ocean protocol, squid-py 🦑
+* fetch.ai
 * fetch.ai/Enigma for mapping out next steps
