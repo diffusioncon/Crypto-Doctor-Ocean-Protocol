@@ -28,7 +28,7 @@ Meanwhile the pure meta data of the date and the final diagnoses will be added t
  which can be bought be researchers and insurances to adjust their approach of business.
 
 ## How we built it
-### Encrypted Neurel Network
+### Encrypted Neural Network
 We trained multiple neural networks using facebooks pytorch and its corresponding encryption library
  to run encrypted models on encrypted data. For training data we used the 
  [Kaggle Brain MRI Images for Brain Tumor Detection challenge](https://www.kaggle.com/navoneel/brain-mri-images-for-brain-tumor-detection)
@@ -48,6 +48,9 @@ if you add the argument `--validate-encrypted True` it will validate the trained
 the encrypted model with encrypted data
 
 ### Run yourself
+![alt text](predoctor_started.png "PREDoctor services: left status, below 
+patient image input, right web-interface for doctors")
+
 Once the seed model exists, you can use it to make predictions on encrypted images
 and test an interactive loop between **patients, model and doctors**.
 
@@ -57,7 +60,7 @@ python predictor
 ```
 This will launch two services, one for patients and one
 for doctors. The program prints out information from both services prefixed 
-by the process rank.
+by their process rank.
 
 In the default configuration, you can interact as follows.
 
@@ -97,5 +100,4 @@ A simple mock up to demonstrate a possible user interface, [here](https://balsam
 * pytorch 🔥
 * crypten 🔒
 * ocean protocol, squid-py 🦑
-* fetch.ai
 * fetch.ai/Enigma for mapping out next steps
