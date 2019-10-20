@@ -78,6 +78,9 @@ python -u predictor | nc seashells.io 1337
 The resulting .csv is live at the seashells url printed at the beginning. We
 published an example stream to `Ocean` [commons](http://insert.link).
 
+## Ocean
+see the self updating meta information for research and insurences with the [ocean protocol](https://commons.oceanprotocol.com/asset/did:op:9875328f95ed4195b254490f660cfd449e76c3482f1d4bc78e69f818d19410e5)
+
 ## Challenges we ran into
 ## Accomplishments that we're proud of
 * utilizing cutting edge [Multiparty Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) for non-trivial image classification
