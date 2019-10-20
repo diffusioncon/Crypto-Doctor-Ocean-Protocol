@@ -1,3 +1,5 @@
+from typing import Optional
+
 try:
     import crypten
     import crypten.mpc as mpc
@@ -52,7 +54,7 @@ def start_web_app(port0, img_size):
 @mpc.run_multiprocess(world_size=2)
 def run_prediction(port0: int = 8080,
                    model_name: str = "LeNet",
-                   model_file: str = "lenet_trained.pth"):
+                   model_file: Optional[str] = None):
 
     rank = comm.get().get_rank()
 
@@ -66,6 +68,9 @@ def run_prediction(port0: int = 8080,
     else:
         raise NotImplementedError(f"No model named {model_name} available")
     print(f"{rank} LOADED empty")
+
+    if model_file is None:
+        model_file = f"{model_name}_trained.pth"
 
     # start web interface
     image_queue = start_web_app(port0, img_size)
@@ -91,8 +96,9 @@ def run_prediction(port0: int = 8080,
     data_enc = crypten.cryptensor(dummy_input)
 
     # classify the encrypted data
-    private_model.eval()
-    output_enc = private_model(data_enc)
+    with torch.no_grad():
+        private_model.eval()
+        output_enc = private_model(data_enc)
 
     # print output
     output = output_enc.get_plain_text()
@@ -126,7 +132,11 @@ def run_prediction(port0: int = 8080,
 
 @click.command()
 @click.option("--port", default=8080, help="patient port of localhost service (doctor service runs on +1)")
-def run_service(port: int=8080):
+@click.option("--model-name", default="LeNet", help="Model architecture to use (either exists in torchvision, like resnet18, or custom LeNet")
+@click.option("--model-file", default=None, type=str, help="Weights of a pretrained model that only PREDICTOR has access to, if None, defaults to {model_name}_trained.pth")
+def run_service(port: int=8080,
+                model_name: str="LeNet",
+                model_file: Optional[str]=None):
     print(f"As PATIENT, post your image file to: http://localhost:{port}/image")
     print('e.g.: `curl -X POST -F "file=@test/Y22.jpg" localhost:8080/image`')
     print(f"As DOCTOR, make your final decion at: http://localhost:{port+1}/decision")
@@ -134,7 +144,7 @@ def run_service(port: int=8080):
     print(f"{PREDICTOR}=PREDICTOR")
     print(f"{PATIENT}=PATIENT")
     print()
-    run_prediction(port)
+    run_prediction(port, model_name, model_file)
 
 if __name__ == "__main__":
     from predictor.greeting import greeting
