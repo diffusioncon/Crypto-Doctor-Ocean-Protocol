@@ -3,18 +3,18 @@
 # CrypDoc 👨‍⚕️👩‍⚕️
 ![alt text](sketch.png "CrypDoc Sketch")
 ## Inspiration
-Taking advantage of work distribution upon doctors. In a capital city the capacity of work might be overflow but on
- the country side at the same time it might me the other way around. We implemented a solution to decentralize work
+Taking advantage of work distribution upon doctors. In a capital city, the capacity of doctors can quickly be overloaded
+ but on the country side at the same time it might me the other way around. We implemented a solution to decentralize work
   and share tasks cleverly while being secure.
 
 In addition, we create an incentive for additional diagnoses and the exchange of results of expertise and for research
 
 ## What it does
-When you done a MRT scan those scans are analyzed by a professional doctor to predict certain diseases, this can take 
-a huge amount of time, thus waiting for the patient, as well as uncertainty. 
+When you had a MRT scan the scans are analyzed by a professional doctor to predict certain diseases, this can take 
+a huge amount of time, thus waiting for the patient, as well as uncertainty due to only one oracle. 
 
-With our solution the MRT scan gets encrypted locally and send to a client which, first, runs a machine learning model 
-on it to make a initial guess plus its confidence. 
+With our solution the MRT scan gets encrypted locally and send to a client which, first, runs an encrypted machine 
+learning model on it to make a initial guess (predocted diagnoses) plus its confidence. 
 
 To ensure the machines prediction a bounty is associated to the task of prediction and spread to doctors around
  the world. The bounty is based on the confidence of the model, the higher the confidence the smaller the bounty. 
