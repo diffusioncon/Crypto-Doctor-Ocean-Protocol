@@ -153,7 +153,7 @@ def validate_side_by_side(val_loader, plaintext_model, private_model):
             scores.append(score)
 
             print(f"Example {i}")
-            print(f"target:\t {target}")
+            print(f"target:\t\t {target}")
             print(f"predicted:\t {predicted}")
             print(f"confidence: {p}")
 
