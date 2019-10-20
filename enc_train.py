@@ -93,15 +93,7 @@ def train_epochs(args):
         print(f"EPOCH {epoch} with score {np.mean(training_scores)}")
         print(f"{'#'*40}\n")
 
-        save_checkpoint(
-            {
-                "epoch": epoch + 1,
-                "arch": args.backbone,
-                "state_dict": model.state_dict(),
-                "best_prec1": best_prec1,
-            },
-            is_best=is_best, filename=args.training_run_out
-        )
+        save_checkpoint(model=model, filename=args.training_run_out)
 
     input_size = get_input_size(val_loader, batch_size)
     private_model = construct_private_model(input_size, model, args.backbone, args.num_classes)
@@ -244,18 +236,14 @@ def validate(val_loader, model, criterion):
     return np.mean(scores)
 
 
-def save_checkpoint(state, is_best, filename="checkpoint.pth.tar"):
+def save_checkpoint(model, filename="checkpoint.pth.tar"):
     """Saves checkpoint of plaintext model"""
     # only save from rank 0 process to avoid race condition
     print(f"\n{'#'*40}")
     print(f"model saved to {filename}")
     print(f"{'#'*40}\n")
 
-    rank = comm.get().get_rank()
-    if rank == 0:
-        torch.save(state, filename)
-        if is_best:
-            shutil.copyfile(filename, "model_best.pth.tar")
+    torch.save(model.state_dict(), filename)
 
 
 def adjust_learning_rate(optimizer, epoch, lr=0.01):
