@@ -70,7 +70,7 @@ def run_prediction(port0: int = 8080,
     print(f"{rank} LOADED empty")
 
     if model_file is None:
-        model_file = f"{model_name}_trained.pth"
+        model_file = f"models/{model_name}.pth"
 
     # start web interface
     image_queue = start_web_app(port0, img_size)
@@ -133,7 +133,7 @@ def run_prediction(port0: int = 8080,
 @click.command()
 @click.option("--port", default=8080, help="patient port of localhost service (doctor service runs on +1)")
 @click.option("--model-name", default="LeNet", help="Model architecture to use (either exists in torchvision, like resnet18, or custom LeNet")
-@click.option("--model-file", default=None, type=str, help="Weights of a pretrained model that only PREDICTOR has access to, if None, defaults to {model_name}_trained.pth")
+@click.option("--model-file", default=None, type=str, help="Weights of a pretrained model that only PREDICTOR has access to, if None, defaults to models/{model_name}.pth")
 def run_service(port: int=8080,
                 model_name: str="LeNet",
                 model_file: Optional[str]=None):
