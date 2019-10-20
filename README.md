@@ -19,6 +19,25 @@ The doctors can accept the challenge and try to solve the task. If a sufficient 
 Meanwhile the pure meta data of the date and the final diagnoses will be added to a ocean protocol data set, which can be bought be researchers and insurances to adjust their approach of business.
 
 ## How we built it
+### Encrypted Neurel Network
+We trained multiple neural networks using facebooks pytorch and its corresponding encryption library
+ to run encrypted models on encrypted data. For training data we used the 
+ [Kaggle Brain MRI Images for Brain Tumor Detection challenge](https://www.kaggle.com/navoneel/brain-mri-images-for-brain-tumor-detection)
+ and trained an addapted LeNet model for fast inference time, additionally we trained a Resnet18 for higher accuracy.
+ 
+ You can train your own model using:
+ ```bash
+ python enc_train.py \
+ --source-dir-train ../brain-mri-train \
+ --source-dir-eval ../brain-mri-val \
+ --training-run-out models/resnet18.pth \
+ --backbone resnet18 \
+ --max-epochs 5
+```
+
+if you add the argument `--validate-encrypted True` it will validate the trained network with the plain model **and** 
+the encrypted model with encrypted data
+ 
 ## Challenges we ran into
 ## Accomplishments that we're proud of
 ## What we learned
@@ -31,8 +50,4 @@ Meanwhile the pure meta data of the date and the final diagnoses will be added t
 * fetch.ai
 * ocean protocol
 
-## Patient
-The patient provides the images
-## Predictor
 
-## Publish
