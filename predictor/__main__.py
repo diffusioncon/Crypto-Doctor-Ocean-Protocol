@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 try:
     import crypten
@@ -15,19 +16,18 @@ import click
 
 from model import LeNet
 from MPC_identities import PATIENT, PREDICTOR
-from predictor.web import index, start_runner_thread, ImageQueue
+from predictor.web import index, start_runner_thread, ImageQueueDoctor, ImageQueuePatient
 
 crypten.init()
-
 
 
 def init_app(relay_predictor_host, img_size):
     app = web.Application()
 
     if comm.get().get_rank() == PREDICTOR:
-        q = ImageQueue(None, img_size=img_size)
+        q = ImageQueueDoctor(img_size=img_size)
     else:
-        q = ImageQueue(relay_to=relay_predictor_host + "/image", img_size=img_size)
+        q = ImageQueuePatient( img_size=img_size, relay_to=relay_predictor_host + "/image")
 
     app.add_routes([web.get("/", index),
                     web.post("/image", q.image)])
@@ -84,7 +84,7 @@ def run_prediction(port0: int = 8080,
     private_model.encrypt(src=PREDICTOR)
     print(f"{rank} ENCRYPTED {private_model.encrypted}")
 
-    # Load image to PATIENT.. dummy_input for now
+    # Load image to PATIENT.. dummy_input for testing
     data_enc = crypten.cryptensor(dummy_input)
 
     # classify the encrypted data
@@ -93,13 +93,32 @@ def run_prediction(port0: int = 8080,
 
     # print output
     output = output_enc.get_plain_text()
-    print(f"{rank} OUTPUT {output})")
+    print(f"{rank} TEST OUTPUT {output})")
 
-    while True:
-        import time
-        t = queue.get()
-        print(f"{rank} INPUT {t.shape}, mean: {t.mean().item()}")
-        time.sleep(1)
+    with torch.no_grad():
+        while True:
+            tensor_image_or_empty = queue.get().unsqueeze(0)
+            encrpyted_image = crypten.cryptensor(tensor_image_or_empty, src=PATIENT)
+            output_enc = private_model(encrpyted_image)
+            output = output_enc.get_plain_text()
+            probabilities = torch.softmax(output, dim=1)[0]
+
+            prediction_is_cancer = probabilities[1].cpu().item()
+            predictor_is_cancer = prediction_is_cancer > 0.5
+            print(f"{rank} PRED {prediction_is_cancer:.2f}% cancer, "
+                  f"(image mean: {tensor_image_or_empty.mean().item()})")
+
+            if rank == PREDICTOR:
+                yn = input(f'{rank} --> to real Doctor: is this prediction correct[y/N]?')
+                if yn == "y":
+                    doctor_is_cancer = predictor_is_cancer
+                else:
+                    doctor_is_cancer = not predictor_is_cancer
+                decision_time = datetime.now()
+                print(f"{rank} Thanks, you'were saying there {'IS' if doctor_is_cancer else 'is NO'} CANCER")
+
+                csv_string = f"{decision_time.strftime('%Y-%m-%dT%H:%M')},{int(doctor_is_cancer)}"
+                print(f"{rank} appending: " + csv_string)
 
 
 @click.command()
