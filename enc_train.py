@@ -243,7 +243,7 @@ def save_checkpoint(model, filename="checkpoint.pth.tar"):
     print(f"model saved to {filename}")
     print(f"{'#'*40}\n")
 
-    torch.save(model.state_dict(), filename)
+    torch.save(model, filename)
 
 
 def adjust_learning_rate(optimizer, epoch, lr=0.01):
