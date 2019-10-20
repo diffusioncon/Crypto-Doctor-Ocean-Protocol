@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 try:
     import crypten
@@ -15,19 +16,18 @@ import click
 
 from model import LeNet
 from MPC_identities import PATIENT, PREDICTOR
-from predictor.web import index, start_runner_thread, ImageQueue
+from predictor.web import index, start_runner_thread, ImageQueueDoctor, ImageQueuePatient
 
 crypten.init()
-
 
 
 def init_app(relay_predictor_host, img_size):
     app = web.Application()
 
     if comm.get().get_rank() == PREDICTOR:
-        q = ImageQueue(None, img_size=img_size)
+        q = ImageQueueDoctor(img_size=img_size)
     else:
-        q = ImageQueue(relay_to=relay_predictor_host + "/image", img_size=img_size)
+        q = ImageQueuePatient( img_size=img_size, relay_to=relay_predictor_host + "/image")
 
     app.add_routes([web.get("/", index),
                     web.post("/image", q.image)])
@@ -104,8 +104,21 @@ def run_prediction(port0: int = 8080,
             probabilities = torch.softmax(output, dim=1)[0]
 
             prediction_is_cancer = probabilities[1].cpu().item()
+            predictor_is_cancer = prediction_is_cancer > 0.5
             print(f"{rank} PRED {prediction_is_cancer:.2f}% cancer, "
                   f"(image mean: {tensor_image_or_empty.mean().item()})")
+
+            if rank == PREDICTOR:
+                yn = input(f'{rank} --> to real Doctor: is this prediction correct[y/N]?')
+                if yn == "y":
+                    doctor_is_cancer = predictor_is_cancer
+                else:
+                    doctor_is_cancer = not predictor_is_cancer
+                decision_time = datetime.now()
+                print(f"{rank} Thanks, you'were saying there {'IS' if doctor_is_cancer else 'is NO'} CANCER")
+
+                csv_string = f"{decision_time.strftime('%Y-%m-%dT%H:%M')},{int(doctor_is_cancer)}"
+                print(f"{rank} appending: " + csv_string)
 
 
 @click.command()

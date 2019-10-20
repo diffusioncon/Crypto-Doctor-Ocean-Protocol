@@ -38,20 +38,19 @@ def get_image_transform(size: int):
 
     return transform
 
-
-class ImageQueue():
-
-    def __init__(self, relay_to: str = None, img_size=32):
-        self.relay_to = relay_to
+class ImageQueue:
+    def __init__(self, img_size=32):
         self.queue = Queue(maxsize=2)
         self.img_size = img_size
 
-    async def image(self, request: ClientRequest) -> ClientResponse:
 
-        if self.relay_to is None:
-            t = torch.empty(3, self.img_size, self.img_size)
-            self.queue.put(t)
-            return web.json_response(dict(OK="queued empty img"))
+class ImageQueuePatient(ImageQueue):
+
+    def __init__(self, img_size: int,  relay_to: str):
+        self.relay_to = relay_to
+        super().__init__(img_size)
+
+    async def image(self, request: ClientRequest) -> ClientResponse:
 
         data = await request.post()
         encoded_img = data["file"].file.read()
@@ -68,6 +67,14 @@ class ImageQueue():
 
         asyncio.ensure_future(send())
         return web.json_response(dict(OK="queued img", shape=list(t.shape)))
+
+class ImageQueueDoctor(ImageQueue):
+
+    async def image(self, request: ClientRequest) -> ClientResponse:
+        t = torch.empty(3, self.img_size, self.img_size)
+        self.queue.put(t)
+        return web.json_response(dict(OK="queued empty img"))
+
 
 
 def runner_async(runner, port):
