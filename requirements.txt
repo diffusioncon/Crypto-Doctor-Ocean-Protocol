@@ -1,3 +1,4 @@
 aiohttp
 aiohttp-debugtoolbar
 aiohttp-swagger
+click
