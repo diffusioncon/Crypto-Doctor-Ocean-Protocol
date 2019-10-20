@@ -10,38 +10,32 @@ except ImportError:
 
 import torch
 import torchvision.models as models
-import torchvision.transforms as transforms
 from aiohttp import web
 import click
 
 from model import LeNet
 from MPC_identities import PATIENT, PREDICTOR
-from predictor.web import index, start_runner_thread
+from predictor.web import index, start_runner_thread, ImageQueue
 
 crypten.init()
 
 
-def get_image_transform():
 
-    transform = transforms.Compose(
-        [
-            transforms.Resize(256),
-            transforms.CenterCrop(224),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ]
-    )
-
-    return transform
-
-
-def init_app_patient():
+def init_app(relay_predictor_host, img_size):
     app = web.Application()
-    app.add_routes([web.get("/", index)])
-    return app
 
-def start_web_app(port0):
-    app = init_app_patient()
+    if comm.get().get_rank() == PREDICTOR:
+        q = ImageQueue(None, img_size=img_size)
+    else:
+        q = ImageQueue(relay_to=relay_predictor_host + "/image", img_size=img_size)
+
+    app.add_routes([web.get("/", index),
+                    web.post("/image", q.image)])
+    return app, q.queue
+
+
+def start_web_app(port0, img_size):
+    app, q = init_app(f"http://localhost:{port0 + 1}", img_size)
     runner = web.AppRunner(app)
 
     # Todo: get other app
@@ -49,6 +43,8 @@ def start_web_app(port0):
         start_runner_thread(runner, port0)
     else:
         start_runner_thread(runner, port0+1) #PREDICTOR
+
+    return q
 
 
 @mpc.run_multiprocess(world_size=2)
@@ -58,18 +54,19 @@ def run_prediction(port0: int = 8080,
 
     rank = comm.get().get_rank()
 
-    # start web interface
-    start_web_app(port0)
-
     # create empty model
     if hasattr(models, model_name):
         dummy_model = getattr(models, model_name)(pretrained=False, num_classes=2)
+        img_size = 224
     elif model_name == "LeNet":
         dummy_model = LeNet(num_classes=2)
+        img_size = 32
     else:
         raise NotImplementedError(f"No model named {model_name} available")
     print(f"{rank} LOADED empty")
 
+    # start web interface
+    queue = start_web_app(port0, img_size)
 
     # Load pre-trained model to PREDICTOR
     # For demo purposes, we don't pass model_name to PATIENT, although it would
@@ -87,12 +84,6 @@ def run_prediction(port0: int = 8080,
     private_model.encrypt(src=PREDICTOR)
     print(f"{rank} ENCRYPTED {private_model.encrypted}")
 
-    # Todo: create (web)queue
-    if rank == PATIENT:
-        import time
-        print(f"{rank} SLEEP")
-        time.sleep(1)
-
     # Load image to PATIENT.. dummy_input for now
     data_enc = crypten.cryptensor(dummy_input)
 
@@ -104,8 +95,12 @@ def run_prediction(port0: int = 8080,
     output = output_enc.get_plain_text()
     print(f"{rank} OUTPUT {output})")
 
-    import time
-    time.sleep(10)
+    while True:
+        import time
+        t = queue.get()
+        print(f"{rank} INPUT {t.shape}, mean: {t.mean().item()}")
+        time.sleep(1)
+
 
 @click.command()
 @click.option("--port", default=8080)
@@ -117,5 +112,7 @@ def run_service(port: int=8080, log: str="DEBUG"):
 if __name__ == "__main__":
     from predictor.greeting import greeting
     print(greeting)
+    print(f"{PREDICTOR}=PREDICTOR")
+    print(f"{PATIENT}=PATIENT")
     run_service()
 
