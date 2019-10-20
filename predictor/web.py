@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import io
 from queue import Queue
 
@@ -51,14 +52,14 @@ class ImageQueuePatient(ImageQueue):
         super().__init__(img_size)
 
     async def image(self, request: ClientRequest) -> ClientResponse:
-
+        dt = datetime.now()
         data = await request.post()
         encoded_img = data["file"].file.read()
         stream = io.BytesIO(encoded_img)
         img = Image.open(stream)
         trans = get_image_transform(self.img_size)
         t = trans(img)
-        self.queue.put(t)
+        self.queue.put((t, dt))
 
         async def send():
             async with ClientSession() as session:
@@ -70,9 +71,14 @@ class ImageQueuePatient(ImageQueue):
 
 class ImageQueueDoctor(ImageQueue):
 
+    def __init__(self, img_size=32):
+        super().__init__(img_size)
+        self.answer_queue = Queue(maxsize=2)
+
     async def image(self, request: ClientRequest) -> ClientResponse:
+        dt = datetime.now()
         t = torch.empty(3, self.img_size, self.img_size)
-        self.queue.put(t)
+        self.queue.put((t, dt))
         return web.json_response(dict(OK="queued empty img"))
 
 

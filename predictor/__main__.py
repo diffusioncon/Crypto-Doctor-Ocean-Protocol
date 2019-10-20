@@ -31,7 +31,7 @@ def init_app(relay_predictor_host, img_size):
 
     app.add_routes([web.get("/", index),
                     web.post("/image", q.image)])
-    return app, q.queue
+    return app, q
 
 
 def start_web_app(port0, img_size):
@@ -66,7 +66,8 @@ def run_prediction(port0: int = 8080,
     print(f"{rank} LOADED empty")
 
     # start web interface
-    queue = start_web_app(port0, img_size)
+    image_queue = start_web_app(port0, img_size)
+    input_queue = image_queue.queue
 
     # Load pre-trained model to PREDICTOR
     # For demo purposes, we don't pass model_name to PATIENT, although it would
@@ -97,18 +98,20 @@ def run_prediction(port0: int = 8080,
 
     with torch.no_grad():
         while True:
-            tensor_image_or_empty = queue.get().unsqueeze(0)
-            encrpyted_image = crypten.cryptensor(tensor_image_or_empty, src=PATIENT)
+            tensor_image_or_empty, input_time = input_queue.get()
+            encrpyted_image = crypten.cryptensor(tensor_image_or_empty.unsqueeze(0), src=PATIENT)
             output_enc = private_model(encrpyted_image)
             output = output_enc.get_plain_text()
             probabilities = torch.softmax(output, dim=1)[0]
 
             prediction_is_cancer = probabilities[1].cpu().item()
             predictor_is_cancer = prediction_is_cancer > 0.5
-            print(f"{rank} PRED {prediction_is_cancer:.2f}% cancer, "
+            print(f"{rank} PRED {prediction_is_cancer:.2f}% cancer @ {input_time.strftime('%Y-%m-%dT%H:%M:%S')} "
                   f"(image mean: {tensor_image_or_empty.mean().item()})")
 
             if rank == PREDICTOR:
+                q_predictor: ImageQueueDoctor = image_queue
+
                 yn = input(f'{rank} --> to real Doctor: is this prediction correct[y/N]?')
                 if yn == "y":
                     doctor_is_cancer = predictor_is_cancer
@@ -117,7 +120,7 @@ def run_prediction(port0: int = 8080,
                 decision_time = datetime.now()
                 print(f"{rank} Thanks, you'were saying there {'IS' if doctor_is_cancer else 'is NO'} CANCER")
 
-                csv_string = f"{decision_time.strftime('%Y-%m-%dT%H:%M')},{int(doctor_is_cancer)}"
+                csv_string = f"{decision_time.strftime('%Y-%m-%dT%H:%M:%S')},{int(doctor_is_cancer)}"
                 print(f"{rank} appending: " + csv_string)
 
 
@@ -133,5 +136,6 @@ if __name__ == "__main__":
     print(greeting)
     print(f"{PREDICTOR}=PREDICTOR")
     print(f"{PATIENT}=PATIENT")
+    print()
     run_service()
 
