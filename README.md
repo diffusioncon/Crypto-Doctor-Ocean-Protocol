@@ -46,11 +46,43 @@ We trained multiple neural networks using facebooks pytorch and its correspondin
 
 if you add the argument `--validate-encrypted True` it will validate the trained network with the plain model **and** 
 the encrypted model with encrypted data
- 
+
+### Run yourself
+Once the seed model exists, you can use it to make predictions on encrypted images
+and test an interactive loop between **patients, model and doctors**.
+
+Starting crypto-doctor:
+```
+python predictor
+```
+This will launch two services, one for patients and one
+for doctors. The program prints out information from both services prefixed 
+by the process rank.
+
+In the default configuration, you can interact as follows.
+
+As PATIENT, post your image file to: http://localhost:8080/image
+e.g.: 
+```
+curl -X POST -F "file=@test/Y22.jpg" localhost:8080/image
+```
+At no point in time, the automatic prediction has access to the original image.
+
+As DOCTOR, make your final decision at: http://localhost:8081/decision
+
+
 ## Challenges we ran into
 ## Accomplishments that we're proud of
+* utilizing cutting edge [Multiparty Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) for non-trivial image classification
+* devising a locally running architecture that combines normal web technologies with pytorch distributed communication for MPC
 ## What we learned
+* a great deal of theoretical insights
+* a great deal of practical insights (thanks for support and implementation from FAIR/CrypTen people)
 ## What's next for crypto-doctor
+* payment system for patients with `Coinbase Merchant`, `IOTA` or similar
+* training on encrypted image data (tracking [issue](https://github.com/facebookresearch/CrypTen/issues/20))
+* deployment with ``
+* consensus among multiple doctor decisions with `Enigma`
 ## Built With
 * love 💚
 * caffein ☕
@@ -58,5 +90,4 @@ the encrypted model with encrypted data
 * pytorch 🔦
 * fetch.ai
 * ocean protocol, squid-py 🦑
-
-
+* fetch.ai/Enigma for mapping out next steps
