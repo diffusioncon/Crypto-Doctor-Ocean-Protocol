@@ -31,6 +31,11 @@ def init_app(relay_predictor_host, img_size):
 
     app.add_routes([web.get("/", index),
                     web.post("/image", q.image)])
+
+    if comm.get().get_rank() == PREDICTOR:
+        app.add_routes([web.get("/decision", q.decision),
+                        web.post("/make_decision", q.make_decision)])
+
     return app, q
 
 
@@ -105,22 +110,20 @@ def run_prediction(port0: int = 8080,
             probabilities = torch.softmax(output, dim=1)[0]
 
             prediction_is_cancer = probabilities[1].cpu().item()
-            predictor_is_cancer = prediction_is_cancer > 0.5
             print(f"{rank} PRED {prediction_is_cancer:.2f}% cancer @ {input_time.strftime('%Y-%m-%dT%H:%M:%S')} "
                   f"(image mean: {tensor_image_or_empty.mean().item()})")
 
             if rank == PREDICTOR:
                 q_predictor: ImageQueueDoctor = image_queue
+                q_predictor.current_pred_cancer = prediction_is_cancer
+                answer_queue = q_predictor.answer_queue
 
-                yn = input(f'{rank} --> to real Doctor: is this prediction correct[y/N]?')
-                if yn == "y":
-                    doctor_is_cancer = predictor_is_cancer
-                else:
-                    doctor_is_cancer = not predictor_is_cancer
-                decision_time = datetime.now()
+                print(f"{rank} Waiting for final decision on http://localhost:{port0 + 1}/decision")
+                doctor_is_cancer, decision_time = answer_queue.get()
                 print(f"{rank} Thanks, you'were saying there {'IS' if doctor_is_cancer else 'is NO'} CANCER")
 
-                csv_string = f"{decision_time.strftime('%Y-%m-%dT%H:%M:%S')},{int(doctor_is_cancer)}"
+                # input_time,decision_time,doctor_is_cancer,predictor_is_cancer
+                csv_string = f"{input_time.strftime('%Y-%m-%dT%H:%M:%S')},{decision_time.strftime('%Y-%m-%dT%H:%M:%S')},{int(doctor_is_cancer),float(prediction_is_cancer)}"
                 print(f"{rank} appending: " + csv_string)
 
 

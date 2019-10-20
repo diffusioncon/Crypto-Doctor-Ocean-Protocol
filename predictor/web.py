@@ -14,15 +14,14 @@ from predictor.greeting import greeting
 
 async def index(request: ClientRequest) -> ClientResponse:
     rank = comm.get().get_rank()
-    if rank == PREDICTOR:
-        rank = "PREDICTOR"
-    elif rank == PATIENT:
-        rank = "PATIENT"
-
     content = greeting
-    content += f"<p>{rank}</p>"
-    content = "<pre>"+content+"</pre>"
+    if rank == PREDICTOR:
+        content += "<p>PREDICTOR</p>"
+        content += '<p>visit <a href="/decision">this</a> to take decisions</p>'
+    elif rank == PATIENT:
+        content += "<p>PATIENT</p>"
 
+    content = "<pre>"+content+"</pre>"
     return web.Response(text=content, content_type='text/html')
 
 
@@ -73,13 +72,54 @@ class ImageQueueDoctor(ImageQueue):
 
     def __init__(self, img_size=32):
         super().__init__(img_size)
+        self.current_input_time = None
+        self.current_pred_cancer = None
         self.answer_queue = Queue(maxsize=2)
 
     async def image(self, request: ClientRequest) -> ClientResponse:
         dt = datetime.now()
         t = torch.empty(3, self.img_size, self.img_size)
         self.queue.put((t, dt))
+        self.current_input_time = dt
         return web.json_response(dict(OK="queued empty img"))
+
+    async def decision(self, request: ClientRequest) -> ClientResponse:
+
+        dt = self.current_input_time
+        content = """
+        <p>For request at {}, you should provide a final decision vs. cancerous prediction: {} </p>
+        """.format(dt, f"{self.current_pred_cancer:.2f}%" if self.current_pred_cancer is not None else "NONE made yet")
+        if self.current_pred_cancer:
+            content += """
+            <p>Please contact the owner for decrypted image...</p>
+            <form action="/make_decision" method="post">
+            <input type="radio" name="affirmative" value="yes"> Confirm </input>
+            <input type="radio" name="negative" value="no"> Wrong </input>
+            <input type="submit" value="Submit">
+            </form>
+            """
+        else:
+            content += """<p>Please wait for prediction on encrpyted image...</p>"""
+        return web.Response(text=content, content_type='text/html')
+
+    async def make_decision(self, request: ClientRequest) -> ClientResponse:
+        data = await request.post()
+        data = dict(data)
+        if "affirmative" in data and not "negative" in data:
+            confirmed = True
+        else:
+            confirmed = False
+
+        content = f"""
+        <pre>Thanks for the decision of confirming: {str(confirmed).upper()}
+take <a href="/decision">next...</a></pre>
+        """
+        dt = datetime.now()
+        self.answer_queue.put((confirmed, dt))
+        self.current_input_time = None
+        self.current_pred_cancer = None
+
+        return web.Response(text=content, content_type='text/html')
 
 
 
