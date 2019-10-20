@@ -80,6 +80,8 @@ published an example stream to `Ocean` [commons](http://insert.link).
 ## Ocean
 see the self updating meta information for research and insurences with the [ocean protocol](https://commons.oceanprotocol.com/asset/did:op:9875328f95ed4195b254490f660cfd449e76c3482f1d4bc78e69f818d19410e5)
 
+## Wireframe
+A simple mock up to demonstrate a possible user interface, [here](https://balsamiq.cloud/s3vqw2q/pm6kxa1/r2278)
 ## Challenges we ran into
 ## Accomplishments that we're proud of
 * utilizing cutting edge [Multiparty Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) for non-trivial image classification
