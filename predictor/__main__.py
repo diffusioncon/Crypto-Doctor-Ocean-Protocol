@@ -1,6 +1,3 @@
-import logging
-from datetime import datetime
-
 try:
     import crypten
     import crypten.mpc as mpc
@@ -123,22 +120,24 @@ def run_prediction(port0: int = 8080,
                 print(f"{rank} Thanks, you'were saying there {'IS' if doctor_is_cancer else 'is NO'} CANCER")
 
                 # input_time,decision_time,doctor_is_cancer,predictor_is_cancer
-                csv_string = f"{input_time.strftime('%Y-%m-%dT%H:%M:%S')},{decision_time.strftime('%Y-%m-%dT%H:%M:%S')},{int(doctor_is_cancer),float(prediction_is_cancer)}"
+                csv_string = f"{input_time.strftime('%Y-%m-%dT%H:%M:%S')},{decision_time.strftime('%Y-%m-%dT%H:%M:%S')},{int(doctor_is_cancer)},{float(prediction_is_cancer)}"
                 print(f"{rank} appending: " + csv_string)
 
 
 @click.command()
-@click.option("--port", default=8080)
-@click.option("--log", default="DEBUG")
-def run_service(port: int=8080, log: str="DEBUG"):
-    logging.basicConfig(level=getattr(logging, log.upper()))
+@click.option("--port", default=8080, help="patient port of localhost service (doctor service runs on +1)")
+def run_service(port: int=8080):
+    print(f"As PATIENT, post your image file to: http://localhost:{port}/image")
+    print('e.g.: `curl -X POST -F "file=@test/Y22.jpg" localhost:8080/image`')
+    print(f"As DOCTOR, make your final decion at: http://localhost:{port+1}/decision")
+    print()
+    print(f"{PREDICTOR}=PREDICTOR")
+    print(f"{PATIENT}=PATIENT")
+    print()
     run_prediction(port)
 
 if __name__ == "__main__":
     from predictor.greeting import greeting
     print(greeting)
-    print(f"{PREDICTOR}=PREDICTOR")
-    print(f"{PATIENT}=PATIENT")
-    print()
     run_service()
 
