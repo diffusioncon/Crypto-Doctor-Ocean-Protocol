@@ -84,7 +84,7 @@ def run_prediction(port0: int = 8080,
     private_model.encrypt(src=PREDICTOR)
     print(f"{rank} ENCRYPTED {private_model.encrypted}")
 
-    # Load image to PATIENT.. dummy_input for now
+    # Load image to PATIENT.. dummy_input for testing
     data_enc = crypten.cryptensor(dummy_input)
 
     # classify the encrypted data
@@ -93,13 +93,19 @@ def run_prediction(port0: int = 8080,
 
     # print output
     output = output_enc.get_plain_text()
-    print(f"{rank} OUTPUT {output})")
+    print(f"{rank} TEST OUTPUT {output})")
 
-    while True:
-        import time
-        t = queue.get()
-        print(f"{rank} INPUT {t.shape}, mean: {t.mean().item()}")
-        time.sleep(1)
+    with torch.no_grad():
+        while True:
+            tensor_image_or_empty = queue.get().unsqueeze(0)
+            encrpyted_image = crypten.cryptensor(tensor_image_or_empty, src=PATIENT)
+            output_enc = private_model(encrpyted_image)
+            output = output_enc.get_plain_text()
+            probabilities = torch.softmax(output, dim=1)[0]
+
+            prediction_is_cancer = probabilities[1].cpu().item()
+            print(f"{rank} PRED {prediction_is_cancer:.2f}% cancer, "
+                  f"(image mean: {tensor_image_or_empty.mean().item()})")
 
 
 @click.command()

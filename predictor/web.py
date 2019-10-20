@@ -2,8 +2,6 @@ import asyncio
 import io
 from queue import Queue
 
-import cv2
-import numpy as np
 from PIL import Image
 from aiohttp import web, ClientRequest, ClientResponse, ClientSession
 import torch
