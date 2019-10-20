@@ -70,6 +70,13 @@ At no point in time, the automatic prediction has access to the original image.
 
 As DOCTOR, make your final decision at: http://localhost:8081/decision
 
+In order to share the stream of final decisions, forward stdout to a [`seashell`](https://seashells.io).
+```
+python -u predictor | nc seashells.io 1337
+```
+
+The resulting .csv is live at the seashells url printed at the beginning. We
+published an example stream to `Ocean` [commons](http://insert.link).
 
 ## Challenges we ran into
 ## Accomplishments that we're proud of
