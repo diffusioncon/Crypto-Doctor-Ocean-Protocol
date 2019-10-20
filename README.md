@@ -1,6 +1,6 @@
 # Team-32
 
-# CrypDoc
+# CrypDoc 👨‍⚕️👩‍⚕️
 ![alt text](sketch.png "CrypDoc Sketch")
 ## Inspiration
 Taking advantage of work distribution upon doctors. In a capital city the capacity of work might be overflow but on
@@ -84,10 +84,10 @@ As DOCTOR, make your final decision at: http://localhost:8081/decision
 * deployment with ``
 * consensus among multiple doctor decisions with `Enigma`
 ## Built With
-* love
-* caffein
-* python
-* pytorch
-* CrypTen
-* ocean protocol
+* love 💚
+* caffein ☕
+* python 🐍
+* pytorch 🔦
+* fetch.ai
+* ocean protocol, squid-py 🦑
 * fetch.ai/Enigma for mapping out next steps
