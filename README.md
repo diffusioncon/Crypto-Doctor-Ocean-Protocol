@@ -74,7 +74,6 @@ In order to share the stream of final decisions, forward stdout to a [`seashell`
 ```
 python -u predictor | nc seashells.io 1337
 ```
-
 The resulting .csv is live at the seashells url printed at the beginning. We
 published an example stream to `Ocean` [commons](http://insert.link).
 
@@ -88,7 +87,6 @@ published an example stream to `Ocean` [commons](http://insert.link).
 ## What's next for crypto-doctor
 * payment system for patients with `Coinbase Merchant`, `IOTA` or similar
 * training on encrypted image data (tracking [issue](https://github.com/facebookresearch/CrypTen/issues/20))
-* deployment with ``
 * consensus among multiple doctor decisions with `Enigma`
 ## Built With
 * love 💚
