@@ -1,5 +1,6 @@
 import os
 import time
+import json
 
 from squid_py import (
     Ocean,
@@ -7,21 +8,26 @@ from squid_py import (
     Config,
 )
 from ocean_keeper.account import Account
+from ocean_utils.ddo.metadata import Metadata
 
+with open('config.ini', 'r') as fp:
+    configs = json.load(fp)
 
-ConfigProvider.set_config(Config('config.ini'))
+ConfigProvider.set_config(Config(options_dict=configs))
 # Make a new instance of Ocean
-ocean = Ocean(Config('config.ini'))
+
+
+ocean = Ocean(Config(options_dict=configs))
 config = ocean.config
 # make account instance, assuming the ethereum account and password are set
 # in the config file `config.ini`
-account = ocean.accounts.list()[0]
+# account = ocean.accounts.list()[0]
 # or
 account = Account(config.parity_address, config.parity_password)
 
 # PUBLISHER
 # Let's start by registering an asset in the Ocean network
-metadata = {}
+metadata = Metadata.get_example()
 
 # consume and service endpoints require `brizo.url` is set in the config file
 # or passed to Ocean instance in the config_dict.

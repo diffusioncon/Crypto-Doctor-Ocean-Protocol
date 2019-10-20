@@ -1,6 +1,6 @@
 # Team-32
 
-# CrypDoc
+# CrypDoc 👨‍⚕️👩‍⚕️
 ![alt text](sketch.png "CrypDoc Sketch")
 ## Inspiration
 Taking advantage of work distribution upon doctors. In a capital city the capacity of work might be overflow but on
@@ -52,11 +52,11 @@ the encrypted model with encrypted data
 ## What we learned
 ## What's next for crypto-doctor
 ## Built With
-* love
-* caffein
-* python
-* pytorch
+* love 💚
+* caffein ☕
+* python 🐍
+* pytorch 🔦
 * fetch.ai
-* ocean protocol
+* ocean protocol, squid-py 🦑
 
 
