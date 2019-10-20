@@ -1,3 +1,4 @@
+import sys
 from typing import Optional
 
 try:
@@ -13,12 +14,14 @@ import torchvision.models as models
 from aiohttp import web
 import click
 
-from model import LeNet
+from model import LeNet,BigLeNet
 from MPC_identities import PATIENT, PREDICTOR
 from predictor.web import index, start_runner_thread, ImageQueueDoctor, ImageQueuePatient
 
 crypten.init()
 
+def print_stderr(*args, **kwargs):
+    print(*args, **kwargs, file=sys.stderr)
 
 def init_app(relay_predictor_host, img_size):
     app = web.Application()
@@ -65,9 +68,12 @@ def run_prediction(port0: int = 8080,
     elif model_name == "LeNet":
         dummy_model = LeNet(num_classes=2)
         img_size = 32
+    elif model_name == "BigLeNet":
+        dummy_model = BigLeNet(num_classes=2)
+        img_size = 64
     else:
         raise NotImplementedError(f"No model named {model_name} available")
-    print(f"{rank} LOADED empty")
+    print_stderr(f"{rank} LOADED empty")
 
     if model_file is None:
         model_file = f"models/{model_name}.pth"
@@ -81,16 +87,16 @@ def run_prediction(port0: int = 8080,
     # be ignored in crypten.load
     if rank == PREDICTOR:
         model = crypten.load(model_file, dummy_model=dummy_model, src=PREDICTOR)
-        print(f"{rank} LOADED model")
+        print_stderr(f"{rank} LOADED model")
     else:
         model = crypten.load(None, dummy_model=dummy_model, src=PREDICTOR)
-        print(f"{rank} BROADCAST model")
+        print_stderr(f"{rank} BROADCAST model")
 
     # Encrypt model from PREDICTOR or dummy
-    dummy_input = torch.zeros((1, 3, 32, 32))
+    dummy_input = torch.zeros((1, 3, img_size, img_size))
     private_model = crypten.nn.from_pytorch(model, dummy_input)
     private_model.encrypt(src=PREDICTOR)
-    print(f"{rank} ENCRYPTED {private_model.encrypted}")
+    print_stderr(f"{rank} ENCRYPTED {private_model.encrypted}")
 
     # Load image to PATIENT.. dummy_input for testing
     data_enc = crypten.cryptensor(dummy_input)
@@ -100,10 +106,13 @@ def run_prediction(port0: int = 8080,
         private_model.eval()
         output_enc = private_model(data_enc)
 
-    # print output
+    # print_stderr output
     output = output_enc.get_plain_text()
-    print(f"{rank} TEST OUTPUT {output})")
+    print_stderr(f"{rank} TEST OUTPUT {output})")
 
+    if rank == PREDICTOR:
+        print_stderr(f"providing .csv header")
+        print("input_time,decision_time,doctor_is_cancer,predictor_is_cancer")
     with torch.no_grad():
         while True:
             tensor_image_or_empty, input_time = input_queue.get()
@@ -113,7 +122,7 @@ def run_prediction(port0: int = 8080,
             probabilities = torch.softmax(output, dim=1)[0]
 
             prediction_is_cancer = probabilities[1].cpu().item()
-            print(f"{rank} PRED {prediction_is_cancer:.2f}% cancer @ {input_time.strftime('%Y-%m-%dT%H:%M:%S')} "
+            print_stderr(f"{rank} PRED {prediction_is_cancer:.2f}% cancer @ {input_time.strftime('%Y-%m-%dT%H:%M:%S')} "
                   f"(image mean: {tensor_image_or_empty.mean().item()})")
 
             if rank == PREDICTOR:
@@ -121,33 +130,34 @@ def run_prediction(port0: int = 8080,
                 q_predictor.current_pred_cancer = prediction_is_cancer
                 answer_queue = q_predictor.answer_queue
 
-                print(f"{rank} Waiting for final decision on http://localhost:{port0 + 1}/decision")
+                print_stderr(f"{rank} Waiting for final decision on http://localhost:{port0 + 1}/decision")
                 doctor_is_cancer, decision_time = answer_queue.get()
-                print(f"{rank} Thanks, you'were saying there {'IS' if doctor_is_cancer else 'is NO'} CANCER")
+                print_stderr(f"{rank} Thanks, you were saying there {'IS' if doctor_is_cancer else 'is NO'} CANCER")
 
                 # input_time,decision_time,doctor_is_cancer,predictor_is_cancer
                 csv_string = f"{input_time.strftime('%Y-%m-%dT%H:%M:%S')},{decision_time.strftime('%Y-%m-%dT%H:%M:%S')},{int(doctor_is_cancer)},{float(prediction_is_cancer)}"
-                print(f"{rank} appending: " + csv_string)
+                print_stderr(f"{rank} appending: " + csv_string)
+                print(csv_string)
 
 
 @click.command()
 @click.option("--port", default=8080, help="patient port of localhost service (doctor service runs on +1)")
-@click.option("--model-name", default="LeNet", help="Model architecture to use (either exists in torchvision, like resnet18, or custom LeNet")
+@click.option("--model-name", default="LeNet", help="Model architecture to use (either exists in torchvision, like resnet18, or custom LeNet or BigLeNet")
 @click.option("--model-file", default=None, type=str, help="Weights of a pretrained model that only PREDICTOR has access to, if None, defaults to models/{model_name}.pth")
 def run_service(port: int=8080,
                 model_name: str="LeNet",
                 model_file: Optional[str]=None):
-    print(f"As PATIENT, post your image file to: http://localhost:{port}/image")
-    print('e.g.: `curl -X POST -F "file=@test/Y22.jpg" localhost:8080/image`')
-    print(f"As DOCTOR, make your final decion at: http://localhost:{port+1}/decision")
-    print()
-    print(f"{PREDICTOR}=PREDICTOR")
-    print(f"{PATIENT}=PATIENT")
-    print()
+    print_stderr(f"As PATIENT, post your image file to: http://localhost:{port}/image")
+    print_stderr('e.g.: `curl -X POST -F "file=@test/Y22.jpg" localhost:8080/image`')
+    print_stderr(f"As DOCTOR, make your final decion at: http://localhost:{port+1}/decision")
+    print_stderr()
+    print_stderr(f"{PREDICTOR}=PREDICTOR")
+    print_stderr(f"{PATIENT}=PATIENT")
+    print_stderr()
     run_prediction(port, model_name, model_file)
 
 if __name__ == "__main__":
     from predictor.greeting import greeting
-    print(greeting)
+    print_stderr(greeting)
     run_service()
 
