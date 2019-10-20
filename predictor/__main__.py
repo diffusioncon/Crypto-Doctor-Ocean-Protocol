@@ -1,7 +1,4 @@
 import logging
-from typing import NamedTuple, Optional
-
-from model import LeNet
 
 try:
     import crypten
@@ -13,18 +10,56 @@ except ImportError:
 
 import torch
 import torchvision.models as models
+import torchvision.transforms as transforms
 from aiohttp import web
 import click
 
+from model import LeNet
 from MPC_identities import PATIENT, PREDICTOR
+from predictor.web import index, start_runner_thread
+
 crypten.init()
 
 
+def get_image_transform():
+
+    transform = transforms.Compose(
+        [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+        ]
+    )
+
+    return transform
+
+
+def init_app_patient():
+    app = web.Application()
+    app.add_routes([web.get("/", index)])
+    return app
+
+def start_web_app(port0):
+    app = init_app_patient()
+    runner = web.AppRunner(app)
+
+    # Todo: get other app
+    if comm.get().get_rank() == PATIENT:
+        start_runner_thread(runner, port0)
+    else:
+        start_runner_thread(runner, port0+1) #PREDICTOR
+
+
 @mpc.run_multiprocess(world_size=2)
-def run_prediction(model_name: str = "LeNet",
+def run_prediction(port0: int = 8080,
+                   model_name: str = "LeNet",
                    model_file: str = "lenet_trained.pth"):
 
     rank = comm.get().get_rank()
+
+    # start web interface
+    start_web_app(port0)
 
     # create empty model
     if hasattr(models, model_name):
@@ -69,18 +104,18 @@ def run_prediction(model_name: str = "LeNet",
     output = output_enc.get_plain_text()
     print(f"{rank} OUTPUT {output})")
 
+    import time
+    time.sleep(10)
 
 @click.command()
 @click.option("--port", default=8080)
 @click.option("--log", default="DEBUG")
-def start_server(port: int=8080):
-    app = web.Application()
-    web.run_app(app, port=port)
-
+def run_service(port: int=8080, log: str="DEBUG"):
+    logging.basicConfig(level=getattr(logging, log.upper()))
+    run_prediction(port)
 
 if __name__ == "__main__":
     from predictor.greeting import greeting
     print(greeting)
-    #start_server()
-    logging.basicConfig(level=logging.INFO)
-    run_prediction()
+    run_service()
+
