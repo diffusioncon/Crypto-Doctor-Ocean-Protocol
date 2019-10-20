@@ -123,7 +123,7 @@ def train(train_loader, model, criterion, optimizer, epoch, print_freq=10):
         loss.backward()
         optimizer.step()
 
-        if i % print_freq:
+        if i % print_freq == 0:
             print(f"train: {epoch}.{i} loss {loss}")
 
 
@@ -247,8 +247,9 @@ def validate(val_loader, model, criterion):
 def save_checkpoint(state, is_best, filename="checkpoint.pth.tar"):
     """Saves checkpoint of plaintext model"""
     # only save from rank 0 process to avoid race condition
-    print(f"{'#'*40}")
+    print(f"\n{'#'*40}")
     print(f"model saved to {filename}")
+    print(f"{'#'*40}\n")
 
     rank = comm.get().get_rank()
     if rank == 0:
